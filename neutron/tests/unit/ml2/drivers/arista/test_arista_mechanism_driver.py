@@ -294,12 +294,30 @@ class PositiveRPCWrapperValidConfigTestCase(base.BaseTestCase):
             'network_id': 'net-id',
             'network_name': 'net-name',
             'segmentation_id': 123,
-        }
+            'shared': False,
+            }
         self.drv.create_network(tenant_id, network)
         cmds = ['enable', 'configure', 'cvx', 'service openstack',
                 'region RegionOne',
                 'tenant ten-1', 'network id net-id name "net-name"',
                 'segment 1 type vlan id 123',
+                'no shared',
+                'exit', 'exit', 'exit', 'exit', 'exit', 'exit']
+        self.drv._server.runCmds.assert_called_once_with(version=1, cmds=cmds)
+
+    def test_create_shared_network(self):
+        tenant_id = 'ten-1'
+        network = {
+            'network_id': 'net-id',
+            'network_name': 'net-name',
+            'segmentation_id': 123,
+            'shared': True}
+        self.drv.create_network(tenant_id, network)
+        cmds = ['enable', 'configure', 'cvx', 'service openstack',
+                'region RegionOne',
+                'tenant ten-1', 'network id net-id name "net-name"',
+                'segment 1 type vlan id 123',
+                'shared',
                 'exit', 'exit', 'exit', 'exit', 'exit', 'exit']
         self.drv._server.runCmds.assert_called_once_with(version=1, cmds=cmds)
 
@@ -310,7 +328,8 @@ class PositiveRPCWrapperValidConfigTestCase(base.BaseTestCase):
             'network_id': 'net-id-%d' % net_id,
             'network_name': 'net-name-%d' % net_id,
             'segmentation_id': net_id,
-        } for net_id in range(1, num_networks)
+            'shared': True,
+            } for net_id in range(1, num_networks)
         ]
 
         self.drv.create_network_bulk(tenant_id, networks)
@@ -324,6 +343,7 @@ class PositiveRPCWrapperValidConfigTestCase(base.BaseTestCase):
             cmds.append('network id net-id-%d name "net-name-%d"' %
                         (net_id, net_id))
             cmds.append('segment 1 type vlan id %d' % net_id)
+            cmds.append('shared')
 
         cmds.extend(self._get_exit_mode_cmds(['tenant', 'region', 'openstack',
                                               'cvx', 'configure', 'enable']))
@@ -811,7 +831,8 @@ class SyncServiceTest(base.BaseTestCase):
                 tenant_id,
                 [{'network_id': network_id,
                   'segmentation_id': segmentation_id,
-                  'network_name': ''}]),
+                  'network_name': '',
+                  'shared': False}]),
             mock.call._run_openstack_cmds(['sync end']),
             mock.call.get_region_updated_time()
         ]
@@ -869,6 +890,7 @@ class SyncServiceTest(base.BaseTestCase):
                 'tenantNetworks': {
                     tenant_1_net_1_id: {
                         'networkId': tenant_1_net_1_id,
+                        'shared': False,
                         'networkName': 'Net1',
                         'segmenationType': 'vlan',
                         'segmentationTypeId': tenant_1_net_1_seg_id,
@@ -888,7 +910,8 @@ class SyncServiceTest(base.BaseTestCase):
                 tenant_2_id,
                 [{'network_id': tenant_2_net_1_id,
                   'segmentation_id': tenant_2_net_1_seg_id,
-                  'network_name': ''}]),
+                  'network_name': '',
+                  'shared': False}]),
             mock.call._run_openstack_cmds(['sync end']),
             mock.call.get_region_updated_time()
         ]
@@ -937,12 +960,14 @@ class SyncServiceTest(base.BaseTestCase):
                 tenant_1_id,
                 [{'network_id': tenant_1_net_1_id,
                   'segmentation_id': tenant_1_net_1_seg_id,
-                  'network_name': ''}]),
+                  'network_name': '',
+                  'shared': False}]),
             mock.call.create_network_bulk(
                 tenant_2_id,
                 [{'network_id': tenant_2_net_1_id,
                   'segmentation_id': tenant_2_net_1_seg_id,
-                  'network_name': ''}]),
+                  'network_name': '',
+                  'shared': False}]),
             mock.call._run_openstack_cmds(['sync end']),
             mock.call.get_region_updated_time()
         ]
